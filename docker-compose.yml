@@ -1,0 +1,6 @@
+services:
+  cronalize_redis:
+    image: redis:7.1
+
+  cronalize_postgres:
+    image: postgres:18-alpine
