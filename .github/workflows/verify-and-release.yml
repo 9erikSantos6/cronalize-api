@@ -87,7 +87,4 @@ jobs:
       - name: Run Semantic Release Execution
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_KEY }}
-          NPM_CONFIG_STRICT_DEV_ENGINES: "false"
-        run: |
-          echo "strict-dev-engines=false" >> ~/.npmrc
-          pnpm exec semantic-release
+        run: pnpm exec semantic-release
