@@ -48,7 +48,9 @@ jobs:
         run: pnpm exec biome format --write .
 
       - name: Test Suite Verification (Vitest)
-        run: pnpm exec vitest run
+        run: |
+          cp .env.example .env
+          pnpm exec vitest run
 
       - name: Run Semantic Release Execution
         env:
