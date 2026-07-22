@@ -89,5 +89,5 @@ jobs:
 
       - name: Run Semantic Release Execution
         env:
-          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm exec semantic-release
