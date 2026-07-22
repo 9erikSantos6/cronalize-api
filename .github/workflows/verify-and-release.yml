@@ -81,8 +81,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify dependencies integrity
-        run: pnpm audit
+      - name: Verify and Resolve dependencies integrity
+        run: |
+          cp .env.example .env
+          ls -la .
+          pnpm audit
 
       - name: Run Semantic Release Execution
         env:
