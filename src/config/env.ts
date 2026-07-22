@@ -1,7 +1,7 @@
 import { config } from '@dotenvx/dotenvx';
 import { z } from 'zod';
 
-config();
+config({ path: ['.env.missing', '.env'], ignore: ['MISSING_ENV_FILE'] });
 
 export const validLogLevels: string[] = ['DEBUG', 'INFO', 'WARN', 'ERROR'] as const;
 
