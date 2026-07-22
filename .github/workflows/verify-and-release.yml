@@ -66,6 +66,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+      - name: Mark workspace as safe directory
+        run: git config --global --add safe.directory '*'
 
       - name: Install pnpm
         uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d 
