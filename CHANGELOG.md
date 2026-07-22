@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/9erikSantos6/cronalize-api/compare/v1.0.0...v1.0.1) (2026-07-22)
+
+
+### Bug Fixes
+
+* **ci:** changes the github token to an automatic value for semantic release ([508cf19](https://github.com/9erikSantos6/cronalize-api/commit/508cf19d1271b1216460ceab2f3970e8e0890f31))
+
 # 1.0.0 (2026-07-22)
 
 
