@@ -50,6 +50,7 @@ jobs:
       - name: Test Suite Verification (Vitest)
         run: |
           cp .env.example .env
+          ls -la .
           pnpm exec vitest run
 
       - name: Run Semantic Release Execution
