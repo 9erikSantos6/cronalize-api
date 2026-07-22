@@ -1,0 +1,20 @@
+#!/bin/sh
+
+if ! command -v cz >/dev/null 2>&1; then
+  echo "================================================================="
+  echo "ERROR: The Commitizen CLI was not detected on your system!" 
+  echo "To ensure the project's commit standards, please install it first." 
+  echo "================================================================="
+  echo ""
+  echo "How to install using recommended tools:"
+  echo ""
+  echo "Option A (Recommended - Ultra-fast):"
+  echo "  uv tool install commitizen"
+  echo ""
+  echo "Option B (Alternative via Python):"
+  echo "  pipx install commitizen"
+  echo ""
+  echo "After installing, restart your terminal and use: pnpm commit"
+  echo "================================================================="
+  exit 1
+fi

@@ -1,0 +1,56 @@
+name: Release Automation
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    container:
+      image: node:24-alpine
+
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Install System Dependencies (Git & SSH)
+        run: apk add --no-cache git openssh-client
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d 
+        with:
+          version: 11
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Code Quality Verification & Fixes (Biome)
+        run: pnpm exec biome check --write .
+
+      - name: Check types (TSC)
+        run: pnpm exec tsc --noEmit
+
+      - name: Formatting (Biome)
+        run: pnpm exec biome format --write .
+
+      - name: Test Suite Verification (Vitest)
+        run: pnpm exec vitest run
+
+      - name: Run Semantic Release Execution
+        env:
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_GH_TOKEN }}
+        run: pnpm exec semantic-release
