@@ -13,8 +13,8 @@ const OS_SYSTEM: string = os.platform();
 const portSchema = z.coerce
   .number()
   .int()
-  .min(1024, 'A porta deve ser maior ou igual a 1024')
-  .max(65535, 'A porta deve ser menor ou igual a 65535');
+  .min(1024, 'The port must be greater than or equal to 1024.')
+  .max(65535, 'The port must be less than or equal to 65535.');
 
 const systemEnvSchema = z.object({
   OS_TIMEZONE: z.string().default(SYSTEM_TIME_ZONE).optional(),
@@ -45,7 +45,7 @@ const authEnvSchema = z.object({
         const hasValidNumber = /^\d+$/.test(value.slice(0, -1));
         return hasValidNumber && hasValidUnit;
       },
-      { message: 'Formato de expiração do JWT inválido (ex: 1h, 30m, 15s)' },
+      { message: 'Invalid JWT expiration format (e.g., 1h, 30m, 15s)' },
     )
     .optional()
     .default('1h'),
@@ -62,15 +62,15 @@ const databaseEnvSchema = z.object({
   DATABASE_TZ: z.coerce.string().optional(),
   DATABASE_SSL: z.coerce.boolean().optional(),
   DATABASE_URL: z
-    .url({ message: 'DATABASE_URL precisa ser uma URL válida' })
+    .url({ message: 'DATABASE_URL must be a valid URL.' })
     .refine((url) => url.startsWith('postgres://') || url.startsWith('postgresql://'), {
-      message: 'DATABASE_URL precisa ser do protocolo Postgres (postgres:// ou postgresql://)',
+      message: 'DATABASE_URL must use the Postgres protocol (postgres:// or postgresql://)',
     })
     .optional(),
   REDIS_URL: z
-    .url({ message: 'REDIS_URL precisa ser uma URL válida' })
+    .url({ message: 'REDIS_URL must be a valid URL.' })
     .refine((url) => url.startsWith('redis://') || url.startsWith('rediss://'), {
-      message: 'REDIS_URL precisa ser do protocolo Redis (redis:// ou rediss://)',
+      message: 'REDIS_URL must use the Redis protocol (redis:// or rediss://)',
     })
     .default('redis://localhost:6379'),
 });
@@ -88,7 +88,9 @@ const envSchema = z
   })
   .superRefine((env, ctx) => {
     if (env.DATABASE_URL) {
-      console.warn('AVISO: DATABASE_URL foi declarada no seu ambiente, priorizaremos o uso');
+      console.warn(
+        'DATABASE_URL has been declared in your environment; we will prioritize its use.',
+      );
       return;
     }
 
@@ -113,7 +115,7 @@ const envSchema = z
     if (missingVars.length > 0) {
       ctx.addIssue({
         code: 'custom',
-        message: `As seguintes variáveis de ambiente obrigatórias do banco de dados não foram definidas: ${missingVars.join(', ')}`,
+        message: `The following mandatory database environment variables were not set: ${missingVars.join(', ')}`,
         path: ['DATABASE_URL'],
       });
     }
@@ -136,7 +138,7 @@ const parseWithCustomError = <T extends z.ZodTypeAny>(schema: T, data: z.input<T
       .map((issue) => `- ${issue.path.join('.')}: ${issue.message}`)
       .join('\n');
 
-    throw new Error(`Erro ao validar variáveis de ambiente!\n${errorMessages}`);
+    throw new Error(`Error validating environment variables!\n${errorMessages}`);
   }
 
   return parsed.data;

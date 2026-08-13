@@ -28,7 +28,7 @@ describe('Env Schema Validation', () => {
     validRawInput = {} as TEnvInput;
   });
 
-  test('Should create a URL to access the database without relying solely on credentials.', () => {
+  test('A URL must be created to access the database without relying exclusively on credentials.', () => {
     delete validRawInput.DATABASE_URL;
 
     const envData = getParsedEnv(validRawInput);
@@ -37,7 +37,7 @@ describe('Env Schema Validation', () => {
     );
   });
 
-  test('Should return the complete environment variable if in TEST', () => {
+  test('It must return the complete environment variable if in TEST mode.', () => {
     validRawInput.DATABASE_USER = '';
     validRawInput.NODE_ENV = 'TEST';
     delete validRawInput.DATABASE_URL;
@@ -57,7 +57,7 @@ describe('Env Schema Validation', () => {
       JWT_EXPIRES_IN: '1h',
     });
   });
-  test('Should return the complete environment variable if in DEVELOPMENT', () => {
+  test('It must return the complete environment variable if in DEVELOPMENT.', () => {
     validRawInput.DATABASE_PASSWORD = '';
     validRawInput.NODE_ENV = 'DEVELOPMENT';
     delete validRawInput.DATABASE_URL;
@@ -78,7 +78,7 @@ describe('Env Schema Validation', () => {
     });
   });
 
-  test('Should return an error if the environment variable is invalid in PRODUCITON', () => {
+  test('It must return the complete environment variable if in PRODUCTION', () => {
     validRawInput.DATABASE_USER = '';
     validRawInput.NODE_ENV = 'PRODUCTION';
     delete validRawInput.DATABASE_URL;
