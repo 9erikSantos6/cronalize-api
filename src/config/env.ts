@@ -1,43 +1,43 @@
+import os from 'node:os';
 import { config } from '@dotenvx/dotenvx';
 import { z } from 'zod';
 
 config({ path: ['.env.missing', '.env'], ignore: ['MISSING_ENV_FILE'] });
 
-export const validLogLevels: string[] = ['DEBUG', 'INFO', 'WARN', 'ERROR'] as const;
+const LOG_LEVEL = ['DEBUG', 'INFO', 'WARN', 'ERROR'] as const;
+const ENVIRONMENT = ['DEVELOPMENT', 'PRODUCTION', 'TEST'] as const;
 
-export const validEnvs: string[] = ['DEVELOPMENT', 'PRODUCTION', 'TEST'] as const;
+const SYSTEM_TIME_ZONE: string = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const OS_SYSTEM: string = os.platform();
 
-export const envSchema = z.object({
+const portSchema = z.coerce
+  .number()
+  .int()
+  .min(1024, 'A porta deve ser maior ou igual a 1024')
+  .max(65535, 'A porta deve ser menor ou igual a 65535');
+
+const systemEnvSchema = z.object({
+  OS_TIMEZONE: z.string().default(SYSTEM_TIME_ZONE).optional(),
+  OS_SYSTEM: z.string().default(OS_SYSTEM).optional(),
   NODE_ENV: z
     .string()
     .transform((val) => val.toUpperCase())
-    .default('DEVELOPMENT')
-    .pipe(z.enum(validEnvs))
-    .nullable(),
-  PORT: z
-    .transform((val) => Number(val))
-    .default(3000)
-    .refine((num) => num >= 1024 && num <= 65535, {
-      message: 'O valor de PORT deve um inteiro entre 1024 e 65535',
-    })
-    .nullable(),
-  DATABASE_URL: z
-    .url({ message: 'DATABASE_URL precisa ser uma URL válida' })
-    .default('postgres://postgres:postgres@localhost:5432/cronalize')
-    .refine((url) => url.startsWith('postgres://') || url.startsWith('postgresql://'), {
-      message: 'DATABASE_URL precisa ser do protocolo Postgres (postgres:// ou postgresql://)',
-    }),
-  REDIS_URL: z
-    .url({ message: 'REDIS_URL precisa ser uma URL válida' })
-    .default('redis://localhost:6379')
-    .refine((url) => url.startsWith('redis://') || url.startsWith('rediss://'), {
-      message: 'REDIS_URL precisa ser do protocolo Redis (redis:// ou rediss://)',
-    }),
+    .pipe(z.enum(ENVIRONMENT))
+    .optional()
+    .default('DEVELOPMENT'),
+  LOG_LEVEL: z
+    .string()
+    .transform((val) => val.toUpperCase())
+    .pipe(z.enum(LOG_LEVEL))
+    .optional()
+    .default('INFO'),
+});
+
+const authEnvSchema = z.object({
   JWT_SECRET: z.string().min(6),
   JWT_EXPIRES_IN: z
     .string()
     .transform((val) => val.toLowerCase())
-    .default('1h')
     .refine(
       (value) => {
         const timeUnits = ['h', 'm', 's'];
@@ -47,25 +47,111 @@ export const envSchema = z.object({
       },
       { message: 'Formato de expiração do JWT inválido (ex: 1h, 30m, 15s)' },
     )
-    .nullable(),
+    .optional()
+    .default('1h'),
   ARGON_SECRET_PEEPER: z.string().min(6),
-  ARGON_SALT: z.coerce.number().default(10).nullable(),
-  LOG_LEVEL: z
-    .string()
-    .default('INFO')
-    .transform((val) => val.toUpperCase())
-    .pipe(z.enum(validLogLevels))
-    .nullable(),
+  ARGON_SALT: z.coerce.number().default(10).optional(),
 });
 
-export type Env = z.infer<typeof envSchema>;
-export type LogLevel = Env['LOG_LEVEL'];
-export type EnvName = Env['NODE_ENV'];
+const databaseEnvSchema = z.object({
+  DATABASE_HOST: z.coerce.string().optional(),
+  DATABASE_PORT: portSchema.optional(),
+  DATABASE_USER: z.coerce.string().optional(),
+  DATABASE_PASSWORD: z.coerce.string().optional(),
+  DATABASE_DB: z.coerce.string().optional(),
+  DATABASE_TZ: z.coerce.string().optional(),
+  DATABASE_SSL: z.coerce.boolean().optional(),
+  DATABASE_URL: z
+    .url({ message: 'DATABASE_URL precisa ser uma URL válida' })
+    .refine((url) => url.startsWith('postgres://') || url.startsWith('postgresql://'), {
+      message: 'DATABASE_URL precisa ser do protocolo Postgres (postgres:// ou postgresql://)',
+    })
+    .optional(),
+  REDIS_URL: z
+    .url({ message: 'REDIS_URL precisa ser uma URL válida' })
+    .refine((url) => url.startsWith('redis://') || url.startsWith('rediss://'), {
+      message: 'REDIS_URL precisa ser do protocolo Redis (redis:// ou rediss://)',
+    })
+    .default('redis://localhost:6379'),
+});
 
-const parsedEnv = envSchema.safeParse(process.env);
+const serverEnvSchema = z.object({
+  PORT: portSchema.default(3000).optional(),
+});
 
-if (!parsedEnv.success) {
-  throw new Error(`Configuração inválida:\n${JSON.stringify(parsedEnv.error.issues, null, 2)}`);
-}
+const envSchema = z
+  .object({
+    ...systemEnvSchema.shape,
+    ...authEnvSchema.shape,
+    ...databaseEnvSchema.shape,
+    ...serverEnvSchema.shape,
+  })
+  .superRefine((env, ctx) => {
+    if (env.DATABASE_URL) {
+      console.warn('AVISO: DATABASE_URL foi declarada no seu ambiente, priorizaremos o uso');
+      return;
+    }
 
-export const env = parsedEnv.data;
+    if (env.NODE_ENV === 'DEVELOPMENT' || env.NODE_ENV === 'TEST') return;
+
+    const databaseExpected = [
+      'DATABASE_HOST',
+      'DATABASE_PORT',
+      'DATABASE_USER',
+      'DATABASE_PASSWORD',
+      'DATABASE_DB',
+    ] as const;
+
+    const missingVars: string[] = [];
+
+    for (const key of databaseExpected) {
+      if (!env[key]) {
+        missingVars.push(key);
+      }
+    }
+
+    if (missingVars.length > 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `As seguintes variáveis de ambiente obrigatórias do banco de dados não foram definidas: ${missingVars.join(', ')}`,
+        path: ['DATABASE_URL'],
+      });
+    }
+  })
+  .transform((env) => ({
+    ...env,
+    DATABASE_URL:
+      env.DATABASE_URL ??
+      `postgres://${env.DATABASE_USER}:${env.DATABASE_PASSWORD}@${env.DATABASE_HOST}:${env.DATABASE_PORT}/${env.DATABASE_DB}`,
+  }));
+
+export type TEnvInput = z.input<typeof envSchema>;
+export type TEnvOutput = z.output<typeof envSchema>;
+
+const parseWithCustomError = <T extends z.ZodTypeAny>(schema: T, data: z.input<T>): z.output<T> => {
+  const parsed = schema.safeParse(data);
+
+  if (!parsed.success) {
+    const errorMessages = parsed.error.issues
+      .map((issue) => `- ${issue.path.join('.')}: ${issue.message}`)
+      .join('\n');
+
+    throw new Error(`Erro ao validar variáveis de ambiente!\n${errorMessages}`);
+  }
+
+  return parsed.data;
+};
+
+export const getParsedEnv = (data: TEnvInput): TEnvOutput => {
+  return parseWithCustomError(envSchema, data);
+};
+
+const environment = process.env as TEnvInput;
+
+export const env: TEnvOutput = getParsedEnv({
+  ...environment,
+  NODE_ENV: process.env.NODE_ENV?.toLocaleUpperCase(),
+  LOG_LEVEL: process.env.LOG_LEVEL?.toLocaleUpperCase(),
+  OS_SYSTEM: OS_SYSTEM,
+  OS_TIMEZONE: SYSTEM_TIME_ZONE,
+});
