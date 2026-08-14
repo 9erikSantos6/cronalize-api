@@ -23,14 +23,14 @@ const systemEnvSchema = z.object({
     .string()
     .transform((val) => val.toUpperCase())
     .pipe(z.enum(ENVIRONMENT))
-    .optional()
-    .default('DEVELOPMENT'),
+    .default('DEVELOPMENT')
+    .optional(),
   LOG_LEVEL: z
     .string()
     .transform((val) => val.toUpperCase())
     .pipe(z.enum(LOG_LEVEL))
-    .optional()
-    .default('INFO'),
+    .default('INFO')
+    .optional(),
 });
 
 const authEnvSchema = z.object({
@@ -127,8 +127,10 @@ const envSchema = z
       `postgres://${env.DATABASE_USER}:${env.DATABASE_PASSWORD}@${env.DATABASE_HOST}:${env.DATABASE_PORT}/${env.DATABASE_DB}`,
   }));
 
+export type TEnv = z.infer<typeof envSchema>;
+export type TEnvMode = TEnv['NODE_ENV'];
+export type TLogLevel = TEnv['LOG_LEVEL'];
 export type TEnvInput = z.input<typeof envSchema>;
-export type TEnvOutput = z.output<typeof envSchema>;
 
 const parseWithCustomError = <T extends z.ZodTypeAny>(schema: T, data: z.input<T>): z.output<T> => {
   const parsed = schema.safeParse(data);
@@ -144,13 +146,13 @@ const parseWithCustomError = <T extends z.ZodTypeAny>(schema: T, data: z.input<T
   return parsed.data;
 };
 
-export const getParsedEnv = (data: TEnvInput): TEnvOutput => {
+export const getParsedEnv = (data: TEnvInput): TEnv => {
   return parseWithCustomError(envSchema, data);
 };
 
 const environment = process.env as TEnvInput;
 
-export const env: TEnvOutput = getParsedEnv({
+export const env: TEnv = getParsedEnv({
   ...environment,
   NODE_ENV: process.env.NODE_ENV?.toLocaleUpperCase(),
   LOG_LEVEL: process.env.LOG_LEVEL?.toLocaleUpperCase(),

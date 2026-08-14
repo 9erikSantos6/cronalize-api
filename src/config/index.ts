@@ -1,6 +1,6 @@
 export {
   env,
   getParsedEnv,
+  TEnv,
   TEnvInput,
-  TEnvOutput,
 } from './env';
