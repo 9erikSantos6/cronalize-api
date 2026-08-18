@@ -2,7 +2,7 @@ import os from 'node:os';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import type { TEnv, TEnvInput } from '@/config';
 import { getParsedEnv } from '@/config';
-import { generateCharExcluding } from '@/utils';
+import { generateCharExcluding, generateRandomString } from '../';
 
 describe('Env Schema Validation', () => {
   let validRawInput: TEnvInput;
@@ -28,7 +28,7 @@ describe('Env Schema Validation', () => {
     validRawInput = {} as TEnvInput;
   });
 
-  test('Deve aplicar variaveis de ambinete implicitas: [OS_SYSTEM, OS_TIMEZONE]', () => {
+  test('Deve aplicar variaveis de ambinete implicitas: OS_SYSTEM, OS_TIMEZONE', () => {
     const validEnv = getParsedEnv(validRawInput);
 
     expect(validEnv.OS_SYSTEM).toBe(osSystem);
@@ -40,6 +40,13 @@ describe('Env Schema Validation', () => {
     validRawInput.PORT = port;
 
     expect(() => getParsedEnv(validRawInput)).toThrow();
+  });
+
+  test('Deve definir por padrão 3000<number> PORT se não for definido', () => {
+    delete validRawInput.ARGON_SALT;
+
+    const validEnv = getParsedEnv(validRawInput);
+    expect(validEnv.PORT).toBe(3000);
   });
 
   test('Deve retornar erro ao declarar valores invalidos no NODE_ENV', () => {
@@ -61,17 +68,38 @@ describe('Env Schema Validation', () => {
   });
 
   test('Deve retornar erro ao declarar chave < 6 caracteres no JWT_SECRET', () => {
-    const invalidValue = 'asder';
+    const invalidValue = generateRandomString(5);
     validRawInput.JWT_SECRET = invalidValue;
 
     expect(() => getParsedEnv(validRawInput)).toThrow();
   });
 
-  test('Deve retornar erro ao declarar chave < 6 caracteres no JWT_SECRET', () => {
-    const excludeChars = 'hms';
+  test('Deve retornar erro ao declarar chave < 6 caracteres no JWT_EXPIRES_IN', () => {
+    const excludeChars = new Set<string>('hms');
     const invalidValue = generateCharExcluding(excludeChars);
     validRawInput.JWT_EXPIRES_IN = `1${invalidValue}`;
     expect(() => getParsedEnv(validRawInput)).toThrow();
+  });
+
+  test('Deve definir por padrão 1h<string> JWT_EXPIRES_IN se não for definido', () => {
+    delete validRawInput.JWT_EXPIRES_IN;
+
+    const validEnv = getParsedEnv(validRawInput);
+    expect(validEnv.JWT_EXPIRES_IN).toBe('1h');
+  });
+
+  test('Deve falhar declarar chave < 6 caracteres no ARGON_SECRET_PEEPER', () => {
+    const invalidValue = generateRandomString(5);
+    validRawInput.ARGON_SECRET_PEEPER = invalidValue;
+
+    expect(() => getParsedEnv(validRawInput)).toThrow();
+  });
+
+  test('Deve definir por padrão 10<number> ARGON_SALT se não for definido', () => {
+    delete validRawInput.ARGON_SALT;
+
+    const validEnv = getParsedEnv(validRawInput);
+    expect(validEnv.ARGON_SALT).toBe(10);
   });
 
   test('A URL must be created to access the database without relying exclusively on credentials.', () => {
@@ -83,7 +111,7 @@ describe('Env Schema Validation', () => {
     );
   });
 
-  test('It must return the complete environment variable if in TEST mode.', () => {
+  test('It must return the complete environment when not providing mandatory fields in TEST mode.', () => {
     const user = null;
     const nodeEnv = 'TEST';
     validRawInput.DATABASE_USER = user;
@@ -106,7 +134,7 @@ describe('Env Schema Validation', () => {
     });
   });
 
-  test('It must return the complete environment variable if in DEVELOPMENT.', () => {
+  test('It must return the complete environment when not providing mandatory fields in DEVELOPMENT.', () => {
     const password = null;
     const nodeEnv = 'DEVELOPMENT';
     validRawInput.DATABASE_PASSWORD = password;
@@ -129,7 +157,7 @@ describe('Env Schema Validation', () => {
     });
   });
 
-  test('It must return the complete environment variable if in PRODUCTION', () => {
+  test('This should return an error when not providing mandatory fields in PRODUCTION', () => {
     validRawInput.DATABASE_USER = '';
     validRawInput.NODE_ENV = 'PRODUCTION';
     delete validRawInput.DATABASE_URL;
@@ -145,6 +173,20 @@ describe('Env Schema Validation', () => {
     const parsedEnv: TEnv = getParsedEnv(validRawInput);
 
     expect(parsedEnv.DATABASE_URL).toBe(custemURL);
+  });
+
+  test('Deve retornar um erro ao declarar uma url REDIS INVÁLIDA', () => {
+    validRawInput.REDIS_URL = `${generateRandomString(5)}://user:pass@localhost:6379`;
+    expect(() => getParsedEnv(validRawInput)).toThrow();
+
+    validRawInput.REDIS_URL = generateRandomString(10);
+    expect(() => getParsedEnv(validRawInput)).toThrow();
+  });
+
+  test('Deve declarar um URL REDIS padrão para se REDIS_URL não for declarada', () => {
+    delete validRawInput.REDIS_URL;
+    const envData = getParsedEnv(validRawInput);
+    expect(envData.REDIS_URL).toBe('redis://localhost:6379');
   });
 
   test('Should validate a correct environment configuration and apply domain defaults', () => {
