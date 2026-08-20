@@ -55,7 +55,7 @@ const authEnvSchema = z.object({
 
 const databaseEnvSchema = z.object({
   DATABASE_HOST: z.coerce.string().optional(),
-  DATABASE_PORT: portSchema.optional(),
+  DATABASE_PORT: portSchema.default(5432).optional(),
   DATABASE_USER: z.coerce.string().optional(),
   DATABASE_PASSWORD: z.coerce.string().optional(),
   DATABASE_DB: z.coerce.string().optional(),

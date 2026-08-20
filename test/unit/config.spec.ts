@@ -168,14 +168,28 @@ describe('Env Schema Validation', () => {
   });
 
   test('Deve priorizar o uso da URL postgres para conexão com banco de dados quando fornecida', () => {
-    const custemURL = 'postgres://myuser:mypass@localhost:5432/mydb';
-    validRawInput.DATABASE_URL = custemURL;
+    const customURL = 'postgres://myuser:mypass@localhost:5432/mydb';
+    validRawInput.DATABASE_URL = customURL;
     const parsedEnv: TEnv = getParsedEnv(validRawInput);
 
-    expect(parsedEnv.DATABASE_URL).toBe(custemURL);
+    expect(parsedEnv.DATABASE_URL).toBe(customURL);
   });
 
-  test('Deve retornar um erro ao declarar uma url REDIS INVÁLIDA', () => {
+  test('Deve retornar um erro ao definir URL POSTGRES INVÁLIDA', () => {
+    const customURL = `${generateRandomString(10)}`;
+    validRawInput.DATABASE_URL = customURL;
+    expect(() => {
+      getParsedEnv(validRawInput);
+    }).toThrow();
+  });
+
+  test('Deve declarar a porta padrão para database POSTGRES como 5432 se não for declarada', () => {
+    delete validRawInput.DATABASE_PORT;
+    const envData = getParsedEnv(validRawInput);
+    expect(envData.DATABASE_PORT).toBe(5432);
+  });
+
+  test('Deve retornar um erro ao declarar uma URL REDIS INVÁLIDA', () => {
     validRawInput.REDIS_URL = `${generateRandomString(5)}://user:pass@localhost:6379`;
     expect(() => getParsedEnv(validRawInput)).toThrow();
 
