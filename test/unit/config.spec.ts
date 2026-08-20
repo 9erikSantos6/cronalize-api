@@ -28,28 +28,28 @@ describe('Env Schema Validation', () => {
     validRawInput = {} as TEnvInput;
   });
 
-  test('Deve aplicar variaveis de ambinete implicitas: OS_SYSTEM, OS_TIMEZONE', () => {
+  test('Must apply implicit environment variables: OS_SYSTEM, OS_TIMEZONE', () => {
     const validEnv = getParsedEnv(validRawInput);
 
     expect(validEnv.OS_SYSTEM).toBe(osSystem);
     expect(validEnv.OS_TIMEZONE).toBe(osTimezone);
   });
 
-  test('Deve falahar se o valor da porta do API server for invalido', () => {
+  test('It should fail if the API server port value is invalid', () => {
     const port = 99999;
     validRawInput.PORT = port;
 
     expect(() => getParsedEnv(validRawInput)).toThrow();
   });
 
-  test('Deve definir por padrão 3000<number> PORT se não for definido', () => {
+  test('Should set by default 3000<number> PORT if not set', () => {
     delete validRawInput.ARGON_SALT;
 
     const validEnv = getParsedEnv(validRawInput);
     expect(validEnv.PORT).toBe(3000);
   });
 
-  test('Deve retornar erro ao declarar valores invalidos no NODE_ENV', () => {
+  test('Should return error when declaring invalid values ​​in NODE_ENV', () => {
     const invalidValue = Math.floor(Math.random() * 0x1000000)
       .toString(8)
       .padStart(6, '0');
@@ -58,7 +58,7 @@ describe('Env Schema Validation', () => {
     expect(() => getParsedEnv(validRawInput)).toThrow();
   });
 
-  test('Deve retornar erro ao declarar valores invalidos no LOG_LEVEL', () => {
+  test('Should return error when declaring invalid values ​​in LOG_LEVEL', () => {
     const invalidValue = Math.floor(Math.random() * 0x1000000)
       .toString(8)
       .padStart(6, '0');
@@ -67,35 +67,35 @@ describe('Env Schema Validation', () => {
     expect(() => getParsedEnv(validRawInput)).toThrow();
   });
 
-  test('Deve retornar erro ao declarar chave < 6 caracteres no JWT_SECRET', () => {
+  test('Should return error when declaring key < 6 characters in JWT_SECRET', () => {
     const invalidValue = generateRandomString(5);
     validRawInput.JWT_SECRET = invalidValue;
 
     expect(() => getParsedEnv(validRawInput)).toThrow();
   });
 
-  test('Deve retornar erro ao declarar chave < 6 caracteres no JWT_EXPIRES_IN', () => {
+  test('Should return error when declaring key < 6 characters in JWT_EXPIRES_IN', () => {
     const excludeChars = new Set<string>('hms');
     const invalidValue = generateCharExcluding(excludeChars);
     validRawInput.JWT_EXPIRES_IN = `1${invalidValue}`;
     expect(() => getParsedEnv(validRawInput)).toThrow();
   });
 
-  test('Deve definir por padrão 1h<string> JWT_EXPIRES_IN se não for definido', () => {
+  test('Should default to 1h<string> JWT_EXPIRES_IN if not defined', () => {
     delete validRawInput.JWT_EXPIRES_IN;
 
     const validEnv = getParsedEnv(validRawInput);
     expect(validEnv.JWT_EXPIRES_IN).toBe('1h');
   });
 
-  test('Deve falhar declarar chave < 6 caracteres no ARGON_SECRET_PEEPER', () => {
+  test('Should fail to declare key < 6 characters in ARGON_SECRET_PEEPER', () => {
     const invalidValue = generateRandomString(5);
     validRawInput.ARGON_SECRET_PEEPER = invalidValue;
 
     expect(() => getParsedEnv(validRawInput)).toThrow();
   });
 
-  test('Deve definir por padrão 10<number> ARGON_SALT se não for definido', () => {
+  test('Should default to 10<number> ARGON_SALT if not defined', () => {
     delete validRawInput.ARGON_SALT;
 
     const validEnv = getParsedEnv(validRawInput);
@@ -167,7 +167,7 @@ describe('Env Schema Validation', () => {
     }).toThrow();
   });
 
-  test('Deve priorizar o uso da URL postgres para conexão com banco de dados quando fornecida', () => {
+  test('Should prioritize using the Postgres URL for the database connection when provided', () => {
     const customURL = 'postgres://myuser:mypass@localhost:5432/mydb';
     validRawInput.DATABASE_URL = customURL;
     const parsedEnv: TEnv = getParsedEnv(validRawInput);
@@ -175,7 +175,7 @@ describe('Env Schema Validation', () => {
     expect(parsedEnv.DATABASE_URL).toBe(customURL);
   });
 
-  test('Deve retornar um erro ao definir URL POSTGRES INVÁLIDA', () => {
+  test('It should return an error when setting an invalid PostgreSQL URL', () => {
     const customURL = `${generateRandomString(10)}`;
     validRawInput.DATABASE_URL = customURL;
     expect(() => {
@@ -183,13 +183,13 @@ describe('Env Schema Validation', () => {
     }).toThrow();
   });
 
-  test('Deve declarar a porta padrão para database POSTGRES como 5432 se não for declarada', () => {
+  test('It must specify the default port for the PostgreSQL database as 5432 if it is not already specified', () => {
     delete validRawInput.DATABASE_PORT;
     const envData = getParsedEnv(validRawInput);
     expect(envData.DATABASE_PORT).toBe(5432);
   });
 
-  test('Deve retornar um erro ao declarar uma URL REDIS INVÁLIDA', () => {
+  test('It should return an error when declaring an invalid Redis URL', () => {
     validRawInput.REDIS_URL = `${generateRandomString(5)}://user:pass@localhost:6379`;
     expect(() => getParsedEnv(validRawInput)).toThrow();
 
@@ -197,7 +197,7 @@ describe('Env Schema Validation', () => {
     expect(() => getParsedEnv(validRawInput)).toThrow();
   });
 
-  test('Deve declarar um URL REDIS padrão para se REDIS_URL não for declarada', () => {
+  test('It must declare a default REDIS URL if REDIS_URL is not declared', () => {
     delete validRawInput.REDIS_URL;
     const envData = getParsedEnv(validRawInput);
     expect(envData.REDIS_URL).toBe('redis://localhost:6379');
