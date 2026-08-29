@@ -6,12 +6,12 @@
       // "*": ["./*"],
       "@/*": ["./src/*"]
     },
-    "target": "ES2022",
+    "target": "ES2023",
     "module": "esnext",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "lib": ["ES2022"],
+    "lib": ["ES2023"],
     "types": ["node"],
 
     "esModuleInterop": true,
